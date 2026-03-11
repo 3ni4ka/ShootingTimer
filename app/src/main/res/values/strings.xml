@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Shooting Timer</string>
+    <string name="setting_timer">Настройки таймера</string>
+    <string name="preparation">Подготовка (сек)</string>
+    <string name="work">Работа (сек)</string>
+    <string name="hold">Удержание после выстрела (сек)</string>
+    <string name="rest">Отдых (сек)</string>
+    <string name="cycles">Количество циклов</string>
+    <string name="sec">сек</string>
+    <string name="pcs">шт</string>
+    <string name="btn_start_timer">ЗАПУСТИТЬ ТАЙМЕР</string>
+    <string name="error_save">Ошибка при сохранении значений</string>
+    <string name="error_fill_fields">Заполните все поля корректно</string>
+    <string name="error_preparation">Подготовка >= %d</string>
+    <string name="error_work">Работа >= %d</string>
+    <string name="error_hold">Удержание >= %d</string>
+    <string name="error_rest">Отдых >= %d</string>
+    <string name="error_cycles">Циклы >= %d</string>
+
+    <!-- TimerActivity — фазы -->
+    <string name="phase_preparation">Подготовка</string>
+    <string name="phase_work">Работа</string>
+    <string name="phase_hold">Удержание</string>
+    <string name="phase_rest">Отдых</string>
+    <string name="phase_completed">Завершено</string>
+
+    <!-- TimerActivity — UI -->
+    <string name="timer_default">00:00</string>
+    <string name="cycle_format">Цикл %d из %d</string>
+    <string name="next_phase_end">Следующая: конец тренировки</string>
+    <string name="next_phase_format">Следующая: %1$s — %2$s</string>
+    <string name="btn_finish">Завершить</string>
+    <string name="btn_back_to_settings">Вернуться к настройкам</string>
+
+    <!-- NotificationHelper -->
+    <string name="notification_channel_name">Shooting Timer</string>
+    <string name="notification_channel_description">Уведомления таймера стрельбы</string>
+    <string name="notification_training_completed_title">Тренировка завершена</string>
+    <string name="notification_training_completed_message">Все циклы выполнены. Отличная работа!</string>
+</resources>
