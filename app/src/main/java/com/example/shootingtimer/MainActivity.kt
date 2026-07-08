@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsetsController
+import android.view.WindowManager
 import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -18,6 +19,15 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : Activity() {
+
+    companion object {
+        private const val PREFS_NAME = "ShootingTimerPrefs"
+        private const val MIN_PREPARATION = 5
+        private const val MIN_WORK = 10
+        private const val MIN_HOLD = 1
+        private const val MIN_REST = 5
+        private const val MIN_CYCLES = 1
+    }
 
     // Поля ввода
     private lateinit var etPreparation: EditText
@@ -28,7 +38,6 @@ class MainActivity : Activity() {
 
     // SharedPreferences для сохранения
     private lateinit var sharedPreferences: SharedPreferences
-    private val PREFS_NAME = "ShootingTimerPrefs"
 
     private var bgColor: Int = 0
     private var textPrimary: Int = 0
@@ -36,12 +45,6 @@ class MainActivity : Activity() {
     private var textHint: Int = 0
     private var accent: Int = 0
 
-    // Минимальные значения
-    private val minPreparation = 5
-    private val minWork = 10
-    private val minHold = 1
-    private val minRest = 5
-    private val minCycles = 1
     private lateinit var scrollView: ScrollView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,6 +58,7 @@ class MainActivity : Activity() {
         accent = ContextCompat.getColor(this, R.color.accent)
 
         sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setupUI()
         setupEdgeToEdgeAndStatusBar()
@@ -125,11 +129,11 @@ class MainActivity : Activity() {
         titleTextView.gravity = Gravity.CENTER
         mainLayout.addView(titleTextView)
 
-        etPreparation = createAndAddField(mainLayout, getString(R.string.preparation), getString(R.string.sec), minPreparation)
-        etWork = createAndAddField(mainLayout, getString(R.string.work), getString(R.string.sec), minWork)
-        etHold = createAndAddField(mainLayout, getString(R.string.hold), getString(R.string.sec), minHold)
-        etRest = createAndAddField(mainLayout, getString(R.string.rest), getString(R.string.sec), minRest)
-        etCycles = createAndAddField(mainLayout, getString(R.string.cycles), getString(R.string.pcs), minCycles)
+        etPreparation = createAndAddField(mainLayout, getString(R.string.preparation), getString(R.string.sec), MIN_PREPARATION)
+        etWork = createAndAddField(mainLayout, getString(R.string.work), getString(R.string.sec), MIN_WORK)
+        etHold = createAndAddField(mainLayout, getString(R.string.hold), getString(R.string.sec), MIN_HOLD)
+        etRest = createAndAddField(mainLayout, getString(R.string.rest), getString(R.string.sec), MIN_REST)
+        etCycles = createAndAddField(mainLayout, getString(R.string.cycles), getString(R.string.pcs), MIN_CYCLES)
 
         val btnStart = Button(this)
         btnStart.layoutParams = LinearLayout.LayoutParams(
@@ -255,48 +259,44 @@ class MainActivity : Activity() {
     }
 
     private fun loadSavedValues() {
-        etPreparation.setText(sharedPreferences.getLong("preparation_time", minPreparation.toLong()).toString())
-        etWork.setText(sharedPreferences.getLong("work_time", minWork.toLong()).toString())
-        etHold.setText(sharedPreferences.getLong("hold_time", minHold.toLong()).toString())
-        etRest.setText(sharedPreferences.getLong("rest_time", minRest.toLong()).toString())
-        etCycles.setText(sharedPreferences.getInt("cycles_count", minCycles).toString())
+        etPreparation.setText(sharedPreferences.getLong("preparation_time", MIN_PREPARATION.toLong()).toString())
+        etWork.setText(sharedPreferences.getLong("work_time", MIN_WORK.toLong()).toString())
+        etHold.setText(sharedPreferences.getLong("hold_time", MIN_HOLD.toLong()).toString())
+        etRest.setText(sharedPreferences.getLong("rest_time", MIN_REST.toLong()).toString())
+        etCycles.setText(sharedPreferences.getInt("cycles_count", MIN_CYCLES).toString())
     }
 
     private fun saveValues() {
-        try {
-            val editor = sharedPreferences.edit()
-            editor.putLong("preparation_time", etPreparation.text.toString().toLong())
-            editor.putLong("work_time", etWork.text.toString().toLong())
-            editor.putLong("hold_time", etHold.text.toString().toLong())
-            editor.putLong("rest_time", etRest.text.toString().toLong())
-            editor.putInt("cycles_count", etCycles.text.toString().toInt())
-            editor.apply()
-        } catch (e: NumberFormatException) {
-            Toast.makeText(this, getString(R.string.error_save), Toast.LENGTH_SHORT).show()
-        }
+        val editor = sharedPreferences.edit()
+        editor.putLong("preparation_time", etPreparation.text.toString().toLongOrNull() ?: MIN_PREPARATION.toLong())
+        editor.putLong("work_time", etWork.text.toString().toLongOrNull() ?: MIN_WORK.toLong())
+        editor.putLong("hold_time", etHold.text.toString().toLongOrNull() ?: MIN_HOLD.toLong())
+        editor.putLong("rest_time", etRest.text.toString().toLongOrNull() ?: MIN_REST.toLong())
+        editor.putInt("cycles_count", etCycles.text.toString().toIntOrNull() ?: MIN_CYCLES)
+        editor.apply()
     }
 
     private fun validateInputs(): Boolean {
-        return try {
-            val prep = etPreparation.text.toString().toInt()
-            val work = etWork.text.toString().toInt()
-            val hold = etHold.text.toString().toInt()
-            val rest = etRest.text.toString().toInt()
-            val cycles = etCycles.text.toString().toInt()
+        val prep = etPreparation.text.toString().toIntOrNull()
+        val work = etWork.text.toString().toIntOrNull()
+        val hold = etHold.text.toString().toIntOrNull()
+        val rest = etRest.text.toString().toIntOrNull()
+        val cycles = etCycles.text.toString().toIntOrNull()
 
-            when {
-                prep < minPreparation -> showError(getString(R.string.error_preparation, minPreparation))
-                work < minWork -> showError(getString(R.string.error_work, minWork))
-                hold < minHold -> showError(getString(R.string.error_hold, minHold))
-                rest < minRest -> showError(getString(R.string.error_rest, minRest))
-                cycles < minCycles -> showError(getString(R.string.error_cycles, minCycles))
-                else -> return true
-            }
-            false
-        } catch (e: NumberFormatException) {
+        if (prep == null || work == null || hold == null || rest == null || cycles == null) {
             showError(getString(R.string.error_fill_fields))
-            false
+            return false
         }
+
+        when {
+            prep < MIN_PREPARATION -> showError(getString(R.string.error_preparation, MIN_PREPARATION))
+            work < MIN_WORK -> showError(getString(R.string.error_work, MIN_WORK))
+            hold < MIN_HOLD -> showError(getString(R.string.error_hold, MIN_HOLD))
+            rest < MIN_REST -> showError(getString(R.string.error_rest, MIN_REST))
+            cycles < MIN_CYCLES -> showError(getString(R.string.error_cycles, MIN_CYCLES))
+            else -> return true
+        }
+        return false
     }
 
     private fun showError(message: String) {
@@ -304,12 +304,13 @@ class MainActivity : Activity() {
     }
 
     private fun startTimerActivity() {
-        val intent = Intent(this, TimerActivity::class.java)
-        intent.putExtra("PREPARATION_TIME", etPreparation.text.toString().toLong())
-        intent.putExtra("WORK_TIME", etWork.text.toString().toLong())
-        intent.putExtra("HOLD_TIME", etHold.text.toString().toLong())
-        intent.putExtra("REST_TIME", etRest.text.toString().toLong())
-        intent.putExtra("CYCLES_COUNT", etCycles.text.toString().toInt())
+        val intent = Intent(this, TimerActivity::class.java).apply {
+            putExtra("PREPARATION_TIME", etPreparation.text.toString().toLongOrNull() ?: MIN_PREPARATION.toLong())
+            putExtra("WORK_TIME", etWork.text.toString().toLongOrNull() ?: MIN_WORK.toLong())
+            putExtra("HOLD_TIME", etHold.text.toString().toLongOrNull() ?: MIN_HOLD.toLong())
+            putExtra("REST_TIME", etRest.text.toString().toLongOrNull() ?: MIN_REST.toLong())
+            putExtra("CYCLES_COUNT", etCycles.text.toString().toIntOrNull() ?: MIN_CYCLES)
+        }
         startActivity(intent)
     }
 

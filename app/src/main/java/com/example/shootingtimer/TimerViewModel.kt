@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -30,7 +32,10 @@ class TimerViewModel : ViewModel() {
     private val _timerState = MutableStateFlow(TimerState())
     val timerState: StateFlow<TimerState> = _timerState
 
-    var onPlaySound: ((SoundEvent) -> Unit)? = null
+    private val _soundEvents = MutableSharedFlow<SoundEvent>()
+    val soundEvents: SharedFlow<SoundEvent> = _soundEvents
+
+    private var isInitialized = false
     private var timerJob: Job? = null
 
     private var preparationTime: Long = 0
@@ -46,7 +51,8 @@ class TimerViewModel : ViewModel() {
         restTime: Long,
         totalCycles: Int
     ) {
-        if (timerJob?.isActive == true) return
+        if (isInitialized) return
+        isInitialized = true
 
         this.preparationTime = preparationTime
         this.workTime = workTime
@@ -81,7 +87,7 @@ class TimerViewModel : ViewModel() {
         timerJob = viewModelScope.launch {
             if (state.phase == TimerPhase.WORK) {
                 delay(1000)
-                onPlaySound?.invoke(SoundEvent.START_WORK)
+                _soundEvents.emit(SoundEvent.START_WORK)
             }
 
             for (secondsLeft in duration downTo 0) {
@@ -92,9 +98,9 @@ class TimerViewModel : ViewModel() {
                 )
 
                 when (state.phase) {
-                    TimerPhase.PREPARATION -> if (secondsLeft <= 2) onPlaySound?.invoke(SoundEvent.BEEP)
-                    TimerPhase.WORK, TimerPhase.REST -> if (secondsLeft in 1..3) onPlaySound?.invoke(SoundEvent.BEEP)
-                    TimerPhase.HOLD -> if (secondsLeft == 0L) onPlaySound?.invoke(SoundEvent.HOLD_FINISH)
+                    TimerPhase.PREPARATION -> if (secondsLeft <= 2) _soundEvents.emit(SoundEvent.BEEP)
+                    TimerPhase.WORK, TimerPhase.REST -> if (secondsLeft in 1..3) _soundEvents.emit(SoundEvent.BEEP)
+                    TimerPhase.HOLD -> if (secondsLeft == 0L) _soundEvents.emit(SoundEvent.HOLD_FINISH)
                     else -> {}
                 }
 
@@ -124,7 +130,7 @@ class TimerViewModel : ViewModel() {
             viewModelScope.launch {
                 delay(1200)
                 repeat(3) {
-                    onPlaySound?.invoke(SoundEvent.TRAINING_COMPLETE)
+                    _soundEvents.emit(SoundEvent.TRAINING_COMPLETE)
                     delay(400)
                 }
             }

@@ -11,6 +11,7 @@ import android.media.SoundPool
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -61,6 +62,7 @@ class TimerActivity : AppCompatActivity() {
         accent = ContextCompat.getColor(this, R.color.accent)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setupUI()
 
@@ -79,7 +81,7 @@ class TimerActivity : AppCompatActivity() {
         requestNotificationPermission()
 
         initSoundPool()
-        setupSoundCallback()
+        observeSoundEvents()
 
         viewModel.init(
             preparationTime = intent.getLongExtra("PREPARATION_TIME", 10),
@@ -186,13 +188,15 @@ class TimerActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSoundCallback() {
-        viewModel.onPlaySound = { event ->
-            when (event) {
-                SoundEvent.BEEP -> playSound(beepSound)
-                SoundEvent.START_WORK -> playSound(startWorkSound)
-                SoundEvent.HOLD_FINISH -> playSound(if (holdFinishSound != 0) holdFinishSound else beepSound)
-                SoundEvent.TRAINING_COMPLETE -> playSound(beepSound)
+    private fun observeSoundEvents() {
+        lifecycleScope.launch {
+            viewModel.soundEvents.collect { event ->
+                when (event) {
+                    SoundEvent.BEEP -> playSound(beepSound)
+                    SoundEvent.START_WORK -> playSound(startWorkSound)
+                    SoundEvent.HOLD_FINISH -> playSound(if (holdFinishSound != 0) holdFinishSound else beepSound)
+                    SoundEvent.TRAINING_COMPLETE -> playSound(beepSound)
+                }
             }
         }
     }
