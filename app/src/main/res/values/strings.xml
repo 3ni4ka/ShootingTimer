@@ -10,6 +10,7 @@
     <string name="sec">сек</string>
     <string name="pcs">шт</string>
     <string name="btn_start_timer">ЗАПУСТИТЬ ТАЙМЕР</string>
+    <string name="total_training_time_prefix">Общее время тренировки: %s</string>
     <string name="error_save">Ошибка при сохранении значений</string>
     <string name="error_fill_fields">Заполните все поля корректно</string>
     <string name="error_preparation">Подготовка >= %d</string>
@@ -27,6 +28,7 @@
 
     <!-- TimerActivity — UI -->
     <string name="timer_default">00:00</string>
+    <string name="total_time_format">Время: %1$s / %2$s</string>
     <string name="cycle_format">Цикл %d из %d</string>
     <string name="next_phase_end">Следующая: конец тренировки</string>
     <string name="next_phase_format">Следующая: %1$s — %2$s</string>

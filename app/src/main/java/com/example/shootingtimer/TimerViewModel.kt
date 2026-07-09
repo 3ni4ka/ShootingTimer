@@ -21,6 +21,8 @@ enum class TimerPhase {
 data class TimerState(
     val phase: TimerPhase = TimerPhase.PREPARATION,
     val secondsLeft: Long = 0,
+    val elapsedSeconds: Long = 0,
+    val totalDurationSeconds: Long = 0,
     val currentCycle: Int = 1,
     val totalCycles: Int = 1,
     val nextPhase: TimerPhase = TimerPhase.WORK,
@@ -43,6 +45,7 @@ class TimerViewModel : ViewModel() {
     private var holdTime: Long = 0
     private var restTime: Long = 0
     private var totalCycles: Int = 0
+    private var totalTrainingDuration: Long = 0
 
     fun init(
         preparationTime: Long,
@@ -60,9 +63,15 @@ class TimerViewModel : ViewModel() {
         this.restTime = restTime
         this.totalCycles = totalCycles
 
+        this.totalTrainingDuration = preparationTime +
+                (totalCycles * (workTime + holdTime)) +
+                ((totalCycles - 1).coerceAtLeast(0) * restTime)
+
         _timerState.value = TimerState(
             phase = TimerPhase.PREPARATION,
             secondsLeft = preparationTime,
+            elapsedSeconds = 0,
+            totalDurationSeconds = totalTrainingDuration,
             currentCycle = 1,
             totalCycles = totalCycles,
             nextPhase = TimerPhase.WORK,
@@ -104,7 +113,12 @@ class TimerViewModel : ViewModel() {
                     else -> {}
                 }
 
-                if (secondsLeft > 0) delay(1000)
+                if (secondsLeft > 0) {
+                    delay(1000)
+                    _timerState.value = _timerState.value.copy(
+                        elapsedSeconds = _timerState.value.elapsedSeconds + 1
+                    )
+                }
             }
             advancePhase()
         }

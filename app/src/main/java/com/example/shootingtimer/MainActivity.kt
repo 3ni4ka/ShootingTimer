@@ -1,24 +1,27 @@
 package com.example.shootingtimer
 
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import java.util.Locale
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val PREFS_NAME = "ShootingTimerPrefs"
@@ -35,6 +38,8 @@ class MainActivity : Activity() {
     private lateinit var etHold: EditText
     private lateinit var etRest: EditText
     private lateinit var etCycles: EditText
+
+    private lateinit var tvTotalTimeCalc: TextView
 
     // SharedPreferences для сохранения
     private lateinit var sharedPreferences: SharedPreferences
@@ -57,7 +62,7 @@ class MainActivity : Activity() {
         textHint = ContextCompat.getColor(this, R.color.text_hint)
         accent = ContextCompat.getColor(this, R.color.accent)
 
-        sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setupUI()
@@ -134,6 +139,20 @@ class MainActivity : Activity() {
         etHold = createAndAddField(mainLayout, getString(R.string.hold), getString(R.string.sec), MIN_HOLD)
         etRest = createAndAddField(mainLayout, getString(R.string.rest), getString(R.string.sec), MIN_REST)
         etCycles = createAndAddField(mainLayout, getString(R.string.cycles), getString(R.string.pcs), MIN_CYCLES)
+
+        tvTotalTimeCalc = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 48
+                bottomMargin = 8
+            }
+            textSize = 16f
+            setTextColor(textSecondary)
+            gravity = Gravity.CENTER
+        }
+        mainLayout.addView(tvTotalTimeCalc)
 
         val btnStart = Button(this)
         btnStart.layoutParams = LinearLayout.LayoutParams(
@@ -241,15 +260,25 @@ class MainActivity : Activity() {
 
         btnMinus.setOnClickListener {
             val value = editText.text.toString().toIntOrNull() ?: minValue
-            editText.setText((value - 1).coerceAtLeast(minValue).toString())
+            editText.setText(String.format(Locale.getDefault(), "%d", (value - 1).coerceAtLeast(minValue)))
             saveValues()
+            updateTotalTimeCalculation()
         }
 
         btnPlus.setOnClickListener {
             val value = editText.text.toString().toIntOrNull() ?: minValue
-            editText.setText((value + 1).toString())
+            editText.setText(String.format(Locale.getDefault(), "%d", value + 1))
             saveValues()
+            updateTotalTimeCalculation()
         }
+
+        editText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateTotalTimeCalculation()
+            }
+        })
 
         editText.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) saveValues()
@@ -264,16 +293,35 @@ class MainActivity : Activity() {
         etHold.setText(sharedPreferences.getLong("hold_time", MIN_HOLD.toLong()).toString())
         etRest.setText(sharedPreferences.getLong("rest_time", MIN_REST.toLong()).toString())
         etCycles.setText(sharedPreferences.getInt("cycles_count", MIN_CYCLES).toString())
+        updateTotalTimeCalculation()
+    }
+
+    private fun updateTotalTimeCalculation() {
+        if (!::tvTotalTimeCalc.isInitialized) return
+
+        val prep = etPreparation.text.toString().toLongOrNull() ?: 0L
+        val work = etWork.text.toString().toLongOrNull() ?: 0L
+        val hold = etHold.text.toString().toLongOrNull() ?: 0L
+        val rest = etRest.text.toString().toLongOrNull() ?: 0L
+        val cycles = etCycles.text.toString().toIntOrNull() ?: 0
+
+        val totalSeconds = prep + (cycles * (work + hold)) + ((cycles - 1).coerceAtLeast(0) * rest)
+        
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        val timeString = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+        
+        tvTotalTimeCalc.text = getString(R.string.total_training_time_prefix, timeString)
     }
 
     private fun saveValues() {
-        val editor = sharedPreferences.edit()
-        editor.putLong("preparation_time", etPreparation.text.toString().toLongOrNull() ?: MIN_PREPARATION.toLong())
-        editor.putLong("work_time", etWork.text.toString().toLongOrNull() ?: MIN_WORK.toLong())
-        editor.putLong("hold_time", etHold.text.toString().toLongOrNull() ?: MIN_HOLD.toLong())
-        editor.putLong("rest_time", etRest.text.toString().toLongOrNull() ?: MIN_REST.toLong())
-        editor.putInt("cycles_count", etCycles.text.toString().toIntOrNull() ?: MIN_CYCLES)
-        editor.apply()
+        sharedPreferences.edit {
+            putLong("preparation_time", etPreparation.text.toString().toLongOrNull() ?: MIN_PREPARATION.toLong())
+            putLong("work_time", etWork.text.toString().toLongOrNull() ?: MIN_WORK.toLong())
+            putLong("hold_time", etHold.text.toString().toLongOrNull() ?: MIN_HOLD.toLong())
+            putLong("rest_time", etRest.text.toString().toLongOrNull() ?: MIN_REST.toLong())
+            putInt("cycles_count", etCycles.text.toString().toIntOrNull() ?: MIN_CYCLES)
+        }
     }
 
     private fun validateInputs(): Boolean {

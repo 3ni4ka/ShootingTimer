@@ -24,10 +24,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class TimerActivity : AppCompatActivity() {
 
     private lateinit var tvTimer: TextView
+    private lateinit var tvTotalTime: TextView
     private lateinit var tvPhase: TextView
     private lateinit var tvCycle: TextView
     private lateinit var tvNextPhase: TextView
@@ -48,6 +50,7 @@ class TimerActivity : AppCompatActivity() {
     // Цвета темы
     private var bgColor: Int = 0
     private var textPrimary: Int = 0
+    private var textSecondary: Int = 0
     private var textDarkGray: Int = 0
     private var textGray: Int = 0
     private var accent: Int = 0
@@ -57,6 +60,7 @@ class TimerActivity : AppCompatActivity() {
 
         bgColor = ContextCompat.getColor(this, R.color.background)
         textPrimary = ContextCompat.getColor(this, R.color.text_primary)
+        textSecondary = ContextCompat.getColor(this, R.color.text_secondary)
         textDarkGray = ContextCompat.getColor(this, R.color.text_dark_gray)
         textGray = ContextCompat.getColor(this, R.color.text_gray)
         accent = ContextCompat.getColor(this, R.color.accent)
@@ -138,6 +142,17 @@ class TimerActivity : AppCompatActivity() {
         }
         rootLayout.addView(tvTimer)
 
+        tvTotalTime = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 24 }
+            text = ""
+            textSize = 18f
+            setTextColor(textSecondary)
+        }
+        rootLayout.addView(tvTotalTime)
+
         tvCycle = TextView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -205,6 +220,7 @@ class TimerActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.timerState.collect { state ->
                 updateTimerDisplay(state.secondsLeft)
+                updateTotalTimeDisplay(state.elapsedSeconds, state.totalDurationSeconds)
                 updateCycle(state.currentCycle, state.totalCycles)
                 updateNextPhase(state.nextPhase, state.nextPhaseSeconds)
 
@@ -225,7 +241,20 @@ class TimerActivity : AppCompatActivity() {
     private fun updateTimerDisplay(seconds: Long) {
         val minutes = seconds / 60
         val remainingSeconds = seconds % 60
-        tvTimer.text = String.format("%02d:%02d", minutes, remainingSeconds)
+        tvTimer.text = String.format(Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
+    }
+
+    private fun updateTotalTimeDisplay(elapsed: Long, total: Long) {
+        val eMin = elapsed / 60
+        val eSec = elapsed % 60
+        val tMin = total / 60
+        val tSec = total % 60
+        
+        tvTotalTime.text = getString(
+            R.string.total_time_format,
+            String.format(Locale.getDefault(), "%02d:%02d", eMin, eSec),
+            String.format(Locale.getDefault(), "%02d:%02d", tMin, tSec)
+        )
     }
 
     private fun updateCycle(current: Int, total: Int) {
@@ -242,7 +271,7 @@ class TimerActivity : AppCompatActivity() {
             tvNextPhase.text = getString(
                 R.string.next_phase_format,
                 name,
-                String.format("%02d:%02d", minutes, remainingSeconds)
+                String.format(Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
             )
         }
     }
@@ -270,6 +299,7 @@ class TimerActivity : AppCompatActivity() {
 
     private fun onTrainingCompleted() {
         tvNextPhase.text = ""
+        tvTotalTime.text = ""
         btnBack.text = getString(R.string.btn_back_to_settings)
         btnBack.background = ContextCompat.getDrawable(this, R.drawable.btn_rounded)
         btnBack.setTextColor(Color.WHITE)
